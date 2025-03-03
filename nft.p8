@@ -8,6 +8,8 @@ mapw=8
 maph=8
 hidden = {}
 
+aniitvl=0.25
+
 function resetmap()
  for col=0,mapw-1 do
   hidden[col] = {}
@@ -45,7 +47,9 @@ function drawmap()
    else
     treespr=mget(col, row)
    end
-   spr(treespr, offsetx+col*8, offsety+row*8)
+   --flip the trees every few frames
+   flipx = (time() / aniitvl) % 2 > 1
+   spr(treespr, offsetx+col*8, offsety+row*8, 1, 1, flipx)
   end
  end
 end
