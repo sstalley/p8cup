@@ -22,7 +22,42 @@ end
 function _init()
  y=6
  x=1
+ fedges = 0
  resetmap()
+end
+
+function update_edges()
+ fedges = 0
+ --horizontal edges
+ for col=0,mapw-1 do
+  for row=0,maph-2 do
+   f1 = not hidden[col][row]
+   f2 = not hidden[col][row+1]
+   diff = mget(col,row) != mget(col,row+1)
+   if f1 and f2 and diff do
+    fedges += 1
+   end
+  end
+ end
+ 
+ --vertical edges
+ for col=0,mapw-2 do
+  for row=0,maph-1 do
+   f1 = not hidden[col][row]
+   f2 = not hidden[col+1][row]
+   diff = mget(col,row) != mget(col+1,row)
+   if f1 and f2 and diff do
+    fedges += 1
+   end   
+  end
+ end
+  
+ return fedges
+end
+
+function unhide(x, y)
+ hidden[x][y] = false
+ fedges = update_edges()
 end
 
 function _update()
@@ -30,7 +65,7 @@ function _update()
  if btnp(➡️) then x=(x+1)%mapw end
  if btnp(⬆️) then y=(y-1)%maph end
  if btnp(⬇️) then y=(y+1)%maph end
- if btnp(❎) then hidden[x][y] = false end
+ if btnp(❎) then unhide(x, y) end
  if btnp(🅾️) then resetmap() end
 
 end
@@ -59,6 +94,7 @@ function _draw()
  drawmap()
  -- map(0, 0, offsetx, offsety, mapw, maph)
  drawcurse()
+ print(fedges,16, 16)
 end
 __gfx__
 0000000000033000000a8000000dd000220000220000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
