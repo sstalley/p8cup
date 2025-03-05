@@ -7,11 +7,11 @@ mapw=8
 maph=8
 hidden = {}
 tedges=0
-aniitvl=0.25
+aniitvl=0.25  --tree frame time
 samples=0
-flashitvl=0.5
-flashpcnt=0.1
-
+flashitvl=0.5 --period of flash
+flashpcnt=0.1 --how long to flash
+movedtime=0.4 --time for drone to move
 
 function resetmap()
  for col=0,mapw-1 do
@@ -20,6 +20,8 @@ function resetmap()
    hidden[col][row] = true
   end
  end
+ fedges = 0
+ samples = 0
 end
 
 function totaledges()
@@ -47,18 +49,19 @@ function totaledges()
 end
 
 function _init()
- y=6
- x=1
- droney = y
- dronex = x
+ cy=6
+ cx=1
+ droney = cy
+ dronex = cx
+ movedstart = 0
  fedges = 0
  tedges = totaledges()
  resetmap()
  updatesamples()
 end
 
-function update_edges()
- fedges = 0
+function updateedges()
+ fe = 0
  --horizontal edges
  for col=0,mapw-1 do
   for row=0,maph-2 do
@@ -66,7 +69,7 @@ function update_edges()
    f2 = not hidden[col][row+1]
    diff = mget(col,row) != mget(col,row+1)
    if f1 and f2 and diff do
-    fedges += 1
+    fe += 1
    end
   end
  end
@@ -78,12 +81,12 @@ function update_edges()
    f2 = not hidden[col+1][row]
    diff = mget(col,row) != mget(col+1,row)
    if f1 and f2 and diff do
-    fedges += 1
+    fe += 1
    end   
   end
  end
   
- return fedges
+ fedges = fe
 end
 
 function updatesamples()
@@ -100,16 +103,23 @@ end
 
 function unhide(x, y)
  hidden[x][y] = false
- fedges = update_edges()
+ updateedges()
  updatesamples()
 end
 
+function movedrone(x, y)
+ newdx=x
+ newdy=y
+ movedstart=time()
+end
+
+
 function _update()
- if btnp(⬅️) then x=(x-1)%mapw end
- if btnp(➡️) then x=(x+1)%mapw end
- if btnp(⬆️) then y=(y-1)%maph end
- if btnp(⬇️) then y=(y+1)%maph end
- if btnp(❎) then unhide(x, y) end
+ if btnp(⬅️) then cx=(cx-1)%mapw end
+ if btnp(➡️) then cx=(cx+1)%mapw end
+ if btnp(⬆️) then cy=(cy-1)%maph end
+ if btnp(⬇️) then cy=(cy+1)%maph end
+ if btnp(❎) then movedrone(cx, cy) end
  if btnp(🅾️) then resetmap() end
 
 end
@@ -143,7 +153,7 @@ function drawedges()
 end
 
 function drawcurse()
- spr(4, offsetx+x*8, offsety+y*8)
+ spr(4, offsetx+cx*8, offsety+cy*8)
 end
 
 function drawdrone()
@@ -156,7 +166,27 @@ function drawdrone()
  else
   dspr=0
  end
- spr(dspr, offsetx+dronex*8, offsety+droney*8)
+
+ x = offsetx+dronex*8
+ y = offsety+droney*8
+ 
+ if movedstart > 0 then
+  pcnt = (time() - movedstart)/movedtime
+  nx = offsetx+newdx*8
+  ny = offsety+newdy*8
+  if pcnt > 1 then -- we are done
+   dronex = newdx
+   droney = newdy
+   movedstart = 0
+   unhide(dronex, droney)
+  else
+   x = x * (1-pcnt) + nx * pcnt
+   y = y * (1-pcnt) + ny * pcnt
+  end
+ 
+ end
+ 
+ spr(dspr, x, y)
 end
 
 function drawmap()
