@@ -7,8 +7,9 @@ offsety=32
 mapw=8
 maph=8
 hidden = {}
-
+tedges=0
 aniitvl=0.25
+samples=0
 
 function resetmap()
  for col=0,mapw-1 do
@@ -19,11 +20,37 @@ function resetmap()
  end
 end
 
+function totaledges()
+ tedges = 0
+ --horizontal edges
+ for col=0,mapw-1 do
+  for row=0,maph-2 do
+   if mget(col,row) != mget(col,row+1) do
+    tedges += 1
+   end
+  end
+ end
+ 
+ --vertical edges
+ for col=0,mapw-2 do
+  for row=0,maph-1 do
+   if mget(col,row) != mget(col+1,row) do
+    tedges += 1
+   end   
+  end
+ end
+  
+ return tedges
+
+end
+
 function _init()
  y=6
  x=1
  fedges = 0
+ tedges = totaledges()
  resetmap()
+ updatesamples()
 end
 
 function update_edges()
@@ -55,9 +82,22 @@ function update_edges()
  return fedges
 end
 
+function updatesamples()
+ s = 0
+ for col=0,mapw-1 do
+  for row=0,maph-1 do
+   if not hidden[col][row] do
+    s += 1
+   end
+  end
+ end
+ samples = s
+end
+
 function unhide(x, y)
  hidden[x][y] = false
  fedges = update_edges()
+ updatesamples()
 end
 
 function _update()
@@ -123,7 +163,8 @@ function _draw()
  -- map(0, 0, offsetx, offsety, mapw, maph)
  drawedges()
  drawcurse()
- print('edges:'..fedges,16, 16, 12)
+ print('edges:'..fedges..'/'..tedges,16, 16, 12)
+ print('samples:'..samples, 16, 24, 9)
 end
 __gfx__
 0000000000033000000a8000000dd00022000022000cc00000000000000000000000000000000000000000000000000000000000000000000000000000000000
