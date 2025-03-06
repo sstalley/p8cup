@@ -132,13 +132,19 @@ function movedrone(x, y)
  batt = tbatt - (tdist + samples)/2
 end
 
+function checkmove(x,y)
+ if not hidden[x][y] or movedstart != 0 then
+  return
+ end
+ movedrone(x, y) 
+end
 
 function _update()
  if btnp(⬅️) then cx=(cx-1)%mapw end
  if btnp(➡️) then cx=(cx+1)%mapw end
  if btnp(⬆️) then cy=(cy-1)%maph end
  if btnp(⬇️) then cy=(cy+1)%maph end
- if btnp(❎) then movedrone(cx, cy) end
+ if btnp(❎) then checkmove(cx, cy) end
  if btnp(🅾️) then _init() end
 
 end
@@ -237,8 +243,13 @@ function _draw()
  print('samples: '..samples, 16, 1+6, 9)
  print('distance:'..tdist, 16, 1+2*6, 8)
  print('battery: '..batt..'%', 16, 1+3*6, 11)
- 
- print('stalley et al. 2022', 16, 122)
+ if movedstart > 0 then
+  prompt = 'drone moving...'
+ else
+  prompt = 'select a sample location'
+ end
+ print(prompt, 16, 116, 7) 
+ print('stalley et al. 2022', 16, 122, 7)
 end
 __gfx__
 000000000003300000098000000dd00022000022000cc00000000000000000000000000000000000000000000000000000000000000000000000000000000000
