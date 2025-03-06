@@ -22,6 +22,7 @@ function resetmap()
  end
  fedges = 0
  samples = 0
+ tdist = 0
 end
 
 function totaledges()
@@ -54,7 +55,6 @@ function _init()
  droney = cy
  dronex = cx
  movedstart = 0
- fedges = 0
  tedges = totaledges()
  resetmap()
  updatesamples()
@@ -111,6 +111,9 @@ function movedrone(x, y)
  newdx=x
  newdy=y
  movedstart=time()
+ dx = dronex - x
+ dy = droney - y
+ tdist += sqrt(dx*dx + dy*dy)
 end
 
 
@@ -212,6 +215,8 @@ function _draw()
  drawdrone()
  print('edges:'..fedges..'/'..tedges,16, 1, 12)
  print('samples:'..samples, 16, 1+6, 9)
+ print('distance:'..tdist, 16, 1+2*6, 11)
+
 end
 __gfx__
 000000000003300000098000000dd00022000022000cc00000000000000000000000000000000000000000000000000000000000000000000000000000000000
