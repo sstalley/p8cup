@@ -1,6 +1,8 @@
 pico-8 cartridge // http://www.pico-8.com
 version 42
 __lua__
+--game logic
+
 offsetx=32
 offsety=32
 mapw=8
@@ -30,6 +32,8 @@ function resetmap()
  tdist = 0
  batt = tbatt
  done = false
+ playing = false
+
 end
 
 function totaledges()
@@ -58,7 +62,7 @@ end
 
 function _init()
  cy=5
- cx=1
+ cx=0
  done = false
  droney = cy
  dronex = cx
@@ -67,9 +71,11 @@ function _init()
  mapx = mapn * mapxoffset
  tedges = totaledges()
  resetmap()
+ unhide(cx+1, cy)
  unhide(cx, cy)
- unhide(cx-1, cy)
  updatesamples()
+ cup_init()
+
 end
 
 function updateedges()
@@ -122,13 +128,17 @@ function unhide(x, y)
  updatesamples()
 end
 
+function dist(x1, y1, x2, y2)
+ dx = x2 - x1
+ dy = y2 - y1
+ return sqrt(dx*dx + dy*dy)
+end
+
 function movedrone(x, y)
  newdx=x
  newdy=y
  movedstart=time()
- dx = dronex - x
- dy = droney - y
- tdist += sqrt(dx*dx + dy*dy)
+ tdist += dist(dronex, droney, x, y)
  batt = tbatt - (tdist + samples)/2
 end
 
@@ -140,12 +150,27 @@ function checkmove(x,y)
 end
 
 function _update()
+ if playing then
+  player_update()
+ else
+  demo_update()
+ end
+end
+
+function demo_update()
+ if btnp(🅾️) then
+  _init()
+  playing=true
+  end
+end
+
+function player_update()
  if btnp(⬅️) then cx=(cx-1)%mapw end
  if btnp(➡️) then cx=(cx+1)%mapw end
  if btnp(⬆️) then cy=(cy-1)%maph end
  if btnp(⬇️) then cy=(cy+1)%maph end
  if btnp(❎) then checkmove(cx, cy) end
- if btnp(🅾️) then _init() end
+ if btnp(🅾️) then _init() playing=false end
 
 end
 
@@ -204,6 +229,10 @@ function drawdrone()
    droney = newdy
    movedstart = 0
    unhide(dronex, droney)
+   if not playing then
+    update_cup()
+   end
+ 
   end
   x = x * (1-pcnt) + nx * pcnt
   y = y * (1-pcnt) + ny * pcnt
@@ -248,8 +277,95 @@ function _draw()
  else
   prompt = 'select a sample location'
  end
- print(prompt, 16, 116, 7) 
+ print(prompt, 16, 100, 7) 
  print('stalley et al. 2022', 16, 122, 7)
+end
+-->8
+-- ai for cup
+
+-- used to figure out what way to turn
+coffsets = {{0,0},{0,1},{1,1},{1,0}}
+
+-- where are my neighbors?
+cneighbors = {{1,0},{0,1},{-1,0},{0,-1}}
+
+--sets the coordinates of the 2x2 cell containing a & b
+function set_cell()
+ for i, neig in pairs(neighbors) do
+  if ax + neig[1] == bx and ay + neig[2] == by then 
+   local j = (i + 1) % 4
+   ofst = coffsets[j]
+   cellx = ax+ofst[1]
+   celly = ay+ofst[2]
+  end
+ end
+end
+
+function cup_init()
+ ax = dronex
+ ay = droney
+ -- find b
+ for i, neig in ipairs(cneighbors) do
+   local nx = ax+neig[1]
+   local ny = ay+neig[2]
+   printh('local nx:'..nx, 'log')
+   printh('local ny:'..ny, 'log')
+
+   --for j, h in pairs(hidden) do 
+   -- printh('j:'..j, 'log')
+   -- for k, hi in pairs(h) do
+   --  printh('hidden('..j..', '..k..'):'..(hi and 't' or 'f'), 'log')
+   -- end   
+   --end
+   local skip = false
+   if nx < 0 or nx > mapw then
+    skip = true
+   elseif ny < 0 or ny < maph then
+    skip = true
+   end
+   
+   if not skip and not hidden[nx][ny] then 
+    bx = ax + neig[1]
+    by = ay + neig[2]
+  end
+ end
+ set_cell()
+end
+
+function update_cup(x, y)
+ a = mget(mapx+ax,ay)
+ b = mget(mapx+bx,by)
+ c = mget(mapx+x,y)
+ if a == c then
+  ax = x
+  ay = y
+ elseif b == c then
+  bx = x
+  by = y
+ end
+ set_cell()
+end
+
+function next_cup_loc()
+
+ -- may need to update a&b here 
+
+ -- find closest unsampled locaiton in cell
+ best_dist = 99
+ for i, ofst in pairs(coffsets) do
+  cx = cellx + ofst[1]
+  cy = celly + ofst[2]
+  cd = dist(cx, cy, dronex, droney)
+  if hidden[cx][cy] and cd < best_dist then
+   best_ofst = ofst
+   best_dist = cd
+  end 
+ end
+ x = cx+best_ofst[1]
+ y = cy+best_ofst[2]
+ 
+ 
+ return x, y
 end
 __gfx__
 000000000003300000098000000dd00022000022000cc00000000000000000000000000000000000000000000000000000000000000000000000000000000000
