@@ -160,6 +160,7 @@ end
 function demo_update()
  if movedstart == 0 then
   loc = next_cup_loc()
+  printh('new loc:('..loc[1]..', '..loc[2]..')', 'cuplog')
   checkmove(loc[1], loc[2])
  end
  if btnp(🅾️) then
@@ -184,27 +185,20 @@ end
 coffsets = {{0,0},{0,1},{1,1},{1,0}}
 
 -- where are my neighbors?
-cneighbors = {{1,0},{0,1},{-1,0},{0,-1}}
+cneighbors = {{0,1},{1,0},{0,-1},{-1,0}}
 
 --sets the coordinates of the 2x2 cell containing a & b
 function set_cell()
- printh('set cell running...', 'log')
- for i, neig in ipairs(cneighbors) do
-  printh('i:'..i, 'log')
-  printh('neig[1]:'..neig[1], 'log')
-  printh('neig[2]:'..neig[2], 'log')
-  printh('a:('..ax..', '..ay..')', 'log')
-  printh('b:('..bx..', '..by..')', 'log')
-  
-  if ax + neig[1] == bx and ay + neig[2] == by then 
-   local j = (i + 1) % 4
-   ofst = coffsets[j]
-   printh('setting cell..', 'log')
-
-   cellx = ax+ofst[1]
-   celly = ay+ofst[2]
-  end
+ cellx = min(ax, bx)
+ celly = min(ay, by)
+ --b above so check backwards
+ if ax == bx and ay > by then
+   cellx -=1
+ --b after so check above
+ elseif ay == by and ax < bx then
+   celly -=1
  end
+   
 end
 
 function cup_init()
@@ -263,8 +257,11 @@ function next_cup_loc()
  for i, ofst in pairs(coffsets) do
   cx = cellx + ofst[1]
   cy = celly + ofst[2]
+  printh('checking ('..cx..', '..cy')', 'cuplog')
+
   cd = dist(cx, cy, dronex, droney)
   if hidden[cx][cy] and cd < best_dist then
+   printh('new best_dist'..cd, 'cuplog')
    best_ofst = ofst
    best_dist = cd
   end 
