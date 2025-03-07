@@ -158,10 +158,14 @@ function _update()
 end
 
 function demo_update()
+ if movedstart == 0 then
+  loc = next_cup_loc()
+  checkmove(loc[1], loc[2])
+ end
  if btnp(🅾️) then
   _init()
   playing=true
-  end
+ end
 end
 
 function player_update()
@@ -173,6 +177,106 @@ function player_update()
  if btnp(🅾️) then _init() playing=false end
 
 end
+-->8
+-- ai for cup
+
+-- used to figure out what way to turn
+coffsets = {{0,0},{0,1},{1,1},{1,0}}
+
+-- where are my neighbors?
+cneighbors = {{1,0},{0,1},{-1,0},{0,-1}}
+
+--sets the coordinates of the 2x2 cell containing a & b
+function set_cell()
+ printh('set cell running...', 'log')
+ for i, neig in ipairs(cneighbors) do
+  printh('i:'..i, 'log')
+  printh('neig[1]:'..neig[1], 'log')
+  printh('neig[2]:'..neig[2], 'log')
+  printh('a:('..ax..', '..ay..')', 'log')
+  printh('b:('..bx..', '..by..')', 'log')
+  
+  if ax + neig[1] == bx and ay + neig[2] == by then 
+   local j = (i + 1) % 4
+   ofst = coffsets[j]
+   printh('setting cell..', 'log')
+
+   cellx = ax+ofst[1]
+   celly = ay+ofst[2]
+  end
+ end
+end
+
+function cup_init()
+ ax = dronex
+ ay = droney
+ -- find b
+ for i, neig in ipairs(cneighbors) do
+   local nx = ax+neig[1]
+   local ny = ay+neig[2]
+   printh('local nx:'..nx, 'log')
+   printh('local ny:'..ny, 'log')
+
+   --for j, h in pairs(hidden) do 
+   -- printh('j:'..j, 'log')
+   -- for k, hi in pairs(h) do
+   --  printh('hidden('..j..', '..k..'):'..(hi and 't' or 'f'), 'log')
+   -- end   
+   --end
+   local skip = false
+   if nx < 0 or nx > mapw then
+    skip = true
+   elseif ny < 0 or ny > maph then
+    skip = true
+   end
+   
+   if not skip and not hidden[nx][ny] then 
+    printh('setting b...', 'log')
+
+    bx = ax + neig[1]
+    by = ay + neig[2]
+  end
+ end
+ set_cell()
+end
+
+function update_cup(x, y)
+ a = mget(mapx+ax,ay)
+ b = mget(mapx+bx,by)
+ c = mget(mapx+x,y)
+ if a == c then
+  ax = x
+  ay = y
+ elseif b == c then
+  bx = x
+  by = y
+ end
+ set_cell()
+end
+
+function next_cup_loc()
+
+ -- may need to update a&b here 
+
+ -- find closest unsampled locaiton in cell
+ best_dist = 99
+ for i, ofst in pairs(coffsets) do
+  cx = cellx + ofst[1]
+  cy = celly + ofst[2]
+  cd = dist(cx, cy, dronex, droney)
+  if hidden[cx][cy] and cd < best_dist then
+   best_ofst = ofst
+   best_dist = cd
+  end 
+ end
+ x = cx+best_ofst[1]
+ y = cy+best_ofst[2]
+ 
+ 
+ return {x, y}
+end
+-->8
+--draw calls
 
 function drawedges()
 
@@ -230,7 +334,7 @@ function drawdrone()
    movedstart = 0
    unhide(dronex, droney)
    if not playing then
-    update_cup()
+    update_cup(dronex, droney)
    end
  
   end
@@ -279,93 +383,6 @@ function _draw()
  end
  print(prompt, 16, 100, 7) 
  print('stalley et al. 2022', 16, 122, 7)
-end
--->8
--- ai for cup
-
--- used to figure out what way to turn
-coffsets = {{0,0},{0,1},{1,1},{1,0}}
-
--- where are my neighbors?
-cneighbors = {{1,0},{0,1},{-1,0},{0,-1}}
-
---sets the coordinates of the 2x2 cell containing a & b
-function set_cell()
- for i, neig in pairs(neighbors) do
-  if ax + neig[1] == bx and ay + neig[2] == by then 
-   local j = (i + 1) % 4
-   ofst = coffsets[j]
-   cellx = ax+ofst[1]
-   celly = ay+ofst[2]
-  end
- end
-end
-
-function cup_init()
- ax = dronex
- ay = droney
- -- find b
- for i, neig in ipairs(cneighbors) do
-   local nx = ax+neig[1]
-   local ny = ay+neig[2]
-   printh('local nx:'..nx, 'log')
-   printh('local ny:'..ny, 'log')
-
-   --for j, h in pairs(hidden) do 
-   -- printh('j:'..j, 'log')
-   -- for k, hi in pairs(h) do
-   --  printh('hidden('..j..', '..k..'):'..(hi and 't' or 'f'), 'log')
-   -- end   
-   --end
-   local skip = false
-   if nx < 0 or nx > mapw then
-    skip = true
-   elseif ny < 0 or ny < maph then
-    skip = true
-   end
-   
-   if not skip and not hidden[nx][ny] then 
-    bx = ax + neig[1]
-    by = ay + neig[2]
-  end
- end
- set_cell()
-end
-
-function update_cup(x, y)
- a = mget(mapx+ax,ay)
- b = mget(mapx+bx,by)
- c = mget(mapx+x,y)
- if a == c then
-  ax = x
-  ay = y
- elseif b == c then
-  bx = x
-  by = y
- end
- set_cell()
-end
-
-function next_cup_loc()
-
- -- may need to update a&b here 
-
- -- find closest unsampled locaiton in cell
- best_dist = 99
- for i, ofst in pairs(coffsets) do
-  cx = cellx + ofst[1]
-  cy = celly + ofst[2]
-  cd = dist(cx, cy, dronex, droney)
-  if hidden[cx][cy] and cd < best_dist then
-   best_ofst = ofst
-   best_dist = cd
-  end 
- end
- x = cx+best_ofst[1]
- y = cy+best_ofst[2]
- 
- 
- return x, y
 end
 __gfx__
 000000000003300000098000000dd00022000022000cc00000000000000000000000000000000000000000000000000000000000000000000000000000000000
